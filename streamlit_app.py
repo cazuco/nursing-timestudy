@@ -18,6 +18,7 @@ USE_AUDIO = True  # 音声入力を使わない場合は False にする
 LOCATIONS = ["病室", "ナースステーション", "廊下", "検査室", "その他"]
 SHIFTS = ["日勤", "夜勤", "時短（13時まで）", "時短（15時まで）", "時短（16時まで）"]
 LADDERS = ["未認定", "Ⅰ", "Ⅱ", "Ⅲ", "Ⅳ", "Ⅴ"]
+ROLES = ["リーダー", "スタッフ", "フリー"]
 
 # 業務分類マスタ（中分類: 必要度タグ）
 # ※必要度タグは暫定。最新の評価票で要確認
@@ -145,7 +146,7 @@ with st.sidebar:
     n_patients = st.number_input(
         "受け持ち人数", min_value=0, max_value=30, value=7, step=1
     )
-    is_leader = st.checkbox("リーダー業務を担当している")
+    role = st.selectbox("役割", ROLES)
 
     st.divider()
     st.caption("※研修用の試作です。患者情報・職員の実名は入力しないでください。")
@@ -163,6 +164,8 @@ if "running" not in st.session_state:
     st.session_state.running = None
 if "pending" not in st.session_state:
     st.session_state.pending = None
+if "audio_round" not in st.session_state:
+    st.session_state.audio_round = 0
 
 # --- 記録中でないとき：開始の入力 ---
 if st.session_state.running is None and st.session_state.pending is None:
@@ -173,22 +176,47 @@ if st.session_state.running is None and st.session_state.pending is None:
     if USE_AUDIO:
         tab1, tab2 = st.tabs(["🎤 音声で入力", "⌨ 文字で入力"])
         with tab1:
-            audio = st.audio_input("マイクを押して業務名を話してください")
+            st.caption(
+                "🔴 マイクを押す → 業務名を話す → ⏹ もう一度押して止める。"
+                "止めた時点で記録が始まります。"
+            )
+            audio = st.audio_input(
+                "業務名を話してください",
+                key=f"audio_{st.session_state.audio_round}",
+            )
+            # 録音が止まった時点で自動的に記録開始
+            if audio is not None:
+                st.session_state.running = {
+                    "開始時刻": datetime.now(),
+                    "memo": None,
+                    "audio": audio.getvalue(),
+                }
+                st.session_state.audio_round += 1
+                st.rerun()
         with tab2:
             memo = st.text_input("業務内容", placeholder="例：301号室の清拭をします")
+            if st.button("▶ 開始", type="primary"):
+                if not memo:
+                    st.warning("業務内容を入力してください。")
+                else:
+                    st.session_state.running = {
+                        "開始時刻": datetime.now(),
+                        "memo": memo,
+                        "audio": None,
+                    }
+                    st.rerun()
     else:
         memo = st.text_input("業務内容", placeholder="例：301号室の清拭をします")
-
-    if st.button("▶ 開始", type="primary"):
-        if audio is None and not memo:
-            st.warning("業務内容を入力してください。")
-        else:
-            st.session_state.running = {
-                "開始時刻": datetime.now(),
-                "memo": memo if not audio else None,
-                "audio": audio.getvalue() if audio else None,
-            }
-            st.rerun()
+        if st.button("▶ 開始", type="primary"):
+            if not memo:
+                st.warning("業務内容を入力してください。")
+            else:
+                st.session_state.running = {
+                    "開始時刻": datetime.now(),
+                    "memo": memo,
+                    "audio": None,
+                }
+                st.rerun()
 
 # --- 記録中 ---
 elif st.session_state.running is not None:
@@ -277,7 +305,7 @@ elif st.session_state.pending is not None:
                 "ラダー": ladder,
                 "経験年数": years,
                 "受け持ち人数": n_patients,
-                "リーダー": "○" if is_leader else "",
+                "役割": role,
             }
         )
 
