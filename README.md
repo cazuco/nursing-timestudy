@@ -5,7 +5,7 @@
 ## URL
 
 このURLで試すことができます（スリープ状態のときは青色の起動ボタンを押してください）：
-【[ここにURL](https://nursing-timestudy.streamlit.app/)】
+【(https://nursing-timestudy.streamlit.app/)】
 
 利用にはGemini APIキーが必要です（[Google AI Studio](https://aistudio.google.com/apikey) で取得できます）。
 
