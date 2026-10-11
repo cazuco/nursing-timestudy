@@ -8,6 +8,7 @@
 【(https://nursing-timestudy.streamlit.app/)】
 
 利用にはGemini APIキーが必要です（[Google AI Studio](https://aistudio.google.com/apikey) で取得できます）。
+※ ご自身のGemini APIキーをご用意ください（無料で取得できます）。
 
 ## 🌟 主な機能
 
